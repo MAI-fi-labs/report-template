@@ -1,1 +1,3 @@
-# report-template
+# lab-template
+
+Update readme
