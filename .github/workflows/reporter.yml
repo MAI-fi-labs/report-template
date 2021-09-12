@@ -1,0 +1,47 @@
+name: Reporter pipeline
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - report.md
+
+jobs:
+  convert_report:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: Check raw report exist
+        run: test -f report.md
+
+      - uses: docker://vanyarock01/pandoc-latex-dejavu:2.14.1
+        with:
+          args: >-
+            --pdf-engine=xelatex
+            --highlight-style=pygments
+            --from markdown+grid_tables
+            --metadata-file=meta.yml
+            report.md -o report.pdf
+
+      - name: Check pdf report
+        run: test -f report.pdf
+
+      - uses: docker://vanyarock01/pandoc-latex-dejavu:2.14.1
+        with:
+          args: report.md -t docx -o report.docx
+
+      - name: Check docx report
+        run: test -f report.docx
+
+      - run: |
+          git config user.name Reporter
+          git config user.email auto-reporter@github.com
+
+          echo 'Push reports to report branch'
+
+          git checkout -b report
+          git add report.md report.pdf report.docx
+
+          git commit -m "[auto] update reports" --allow-empty 
+          git push origin +report
